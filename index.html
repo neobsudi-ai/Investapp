@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .project {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #0066ff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .auth-buttons {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-buttons">
+        <button onclick="showAuth()">Войти</button>
+    </div>
+
+    <h1>🏦 InvestApp</h1>
+    <p>Площадка для инвесторов и проектов</p>
+
+    <button onclick="showForm()">+ Добавить проект</button>
+
+    <div id="project-form" style="display:none;">
+        <h2>Новый проект</h2>
+        <input type="text" id="project-title" placeholder="Название проекта">
+        <textarea id="project-desc" placeholder="Описание" rows="4"></textarea>
+        <input type="number" id="project-budget" placeholder="Необходимая сумма">
+        <button onclick="addProject()">Опубликовать</button>
+    </div>
+
+    <div id="projects-list">
+        <p>Загрузка проектов...</p>
+    </div>
+
+    <script>
+        const API_URL = '/.netlify/functions'; // Важно: это путь к функциям
+
+        // Загружаем проекты при загрузке страницы
+        document.addEventListener('DOMContentLoaded', fetchProjects);
+
+        async function fetchProjects() {
+            try {
+                const response = await fetch(`${API_URL}/get-projects`);
+                const projects = await response.json();
+                
+                let html = '';
+                projects.forEach(project => {
+                    html += `
+                        <div class="project">
+                            <h3>${project.title}</h3>
+                            <p>${project.description}</p>
+                            <p><strong>Нужно: ${project.budget} руб.</strong></p>
+                            <button onclick="showAuth()">Откликнуться</button>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('projects-list').innerHTML = html || '<p>Проектов пока нет.</p>';
+            } catch (error) {
+                console.error('Ошибка:', error);
+                document.getElementById('projects-list').innerHTML = '<p>Ошибка загрузки проектов.</p>';
+            }
+        }
+
+        function showForm() {
+            // Пока просто показываем форму
+            document.getElementById('project-form').style.display = 'block';
+        }
+
+        function showAuth() {
+            alert('Для продолжения нужно войти или зарегистрироваться');
+        }
+
+        async function addProject() {
+            const project = {
+                title: document.getElementById('project-title').value,
+                description: document.getElementById('project-desc').value,
+                budget: document.getElementById('project-budget').value,
+                date: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/add-project`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(project)
+                });
+
+                if (response.ok) {
+                    alert('Проект добавлен!');
+                    document.getElementById('project-form').style.display = 'none';
+                    fetchProjects(); // Обновляем список
+                } else {
+                    alert('Ошибка при добавлении');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка сети');
+            }
+        }
+    </script>
+</body>
+</html>
